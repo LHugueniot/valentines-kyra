@@ -1,0 +1,80 @@
+#root {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.romantic-bg {
+  background-color: #fff0f5; /* LavenderBlush */
+  background-image: radial-gradient(#ffb6c1 1px, transparent 1px);
+  background-size: 40px 40px;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.romantic-card {
+  border: none;
+  border-radius: 2rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  max-width: 600px;
+  width: 90%;
+}
+
+h1 {
+  font-family: 'Dancing Script', cursive, system-ui;
+  color: #d63384;
+}
+
+.yes-button {
+  background-color: #ff1493 !important;
+  border: none !important;
+  transition: transform 0.2s, font-size 0.2s;
+}
+
+.yes-button:hover {
+  transform: scale(1.1);
+}
+
+.no-button {
+  transition: transform 0.1s ease-out;
+  z-index: 1000;
+}
+
+/* When the button is absolute/fixed, we want it to snap to position faster */
+.no-button[style*="position: fixed"] {
+  transition: none;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+  transform: scale(1.05);
+}
+
+/* Add a floating heart animation if you want to get fancy later */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+.img-fluid {
+  animation: float 3s ease-in-out infinite;
+}
+
+.floating-heart {
+  position: absolute;
+  bottom: -50px;
+  animation: heart-float 6s linear infinite;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes heart-float {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-110vh) rotate(360deg);
+    opacity: 0;
+  }
+}
