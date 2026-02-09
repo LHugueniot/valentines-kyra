@@ -15,7 +15,6 @@ const FLOATING_ITEMS = Array.from({ length: 25 }, (_, i) => ({
   emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)]
 }))
 
-// This is 'ValentineUnlocked' encrypted with 'sexythang'
 const ENCRYPTED_VAL = 'U2FsdGVkX18gnSyugibT/w4EUctH2Ypz+8ecgXYAeCsrXm3106Y5dgV684x7IvaK'
 
 function App() {
