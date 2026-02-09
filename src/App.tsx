@@ -1,25 +1,37 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import confetti from 'canvas-confetti'
+import CryptoJS from 'crypto-js'
+import encryptedImageData from './encrypted-photo.json'
 import './App.css'
 
-const HEARTS = Array.from({ length: 20 }, (_, i) => ({
+const EMOJIS = ['❤️', '💖', '✨', '🌸', '🧸', '🌹', '🍫', '🥂']
+
+const FLOATING_ITEMS = Array.from({ length: 25 }, (_, i) => ({
   id: i,
+  emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
   left: `${Math.random() * 100}%`,
   animationDelay: `${Math.random() * 5}s`,
-  fontSize: `${Math.random() * 20 + 10}px`
+  fontSize: `${Math.random() * 20 + 15}px`
 }))
 
+// This is 'ValentineUnlocked' encrypted with 'sexythang'
+const ENCRYPTED_VAL = 'U2FsdGVkX18gnSyugibT/w4EUctH2Ypz+8ecgXYAeCsrXm3106Y5dgV684x7IvaK'
+
 function App() {
+  const [unlocked, setUnlocked] = useState(false)
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState(false)
+  const [decryptedPhoto, setDecryptedPhoto] = useState<string | null>(null)
   const [accepted, setAccepted] = useState(false)
-  // Initialize with a calculated center-ish position to avoid any measurement jumps
   const [noButtonPosition, setNoButtonPosition] = useState({
-    x: window.innerWidth / 2 + 50,
-    y: window.innerHeight * 0.73
+    x: window.innerWidth * 0.53,
+    y: window.innerHeight * 0.74
   })
   const [noCount, setNoCount] = useState(0)
   const noButtonRef = useRef<HTMLButtonElement>(null)
+  const yesButtonRef = useRef<HTMLButtonElement>(null)
 
-  const moveButton = useCallback((mouseX: number, mouseY: number) => {
+  const triggerMove = useCallback((mouseX: number, mouseY: number) => {
     if (!noButtonRef.current) return
 
     const rect = noButtonRef.current.getBoundingClientRect()
@@ -32,7 +44,9 @@ function App() {
 
     if (distance < 150) {
       const angle = Math.atan2(dy, dx)
-      const pushAmount = 50
+      const basePush = 50
+      const randomness = (Math.random() - 0.5) * 2 * (basePush * 0.1)
+      const pushAmount = basePush + randomness
 
       let newX = rect.left + Math.cos(angle) * pushAmount
       let newY = rect.top + Math.sin(angle) * pushAmount
@@ -51,9 +65,17 @@ function App() {
     }
   }, [])
 
+  const handleYesHover = () => {
+    if (noCount === 0 && yesButtonRef.current) {
+      const yesRect = yesButtonRef.current.getBoundingClientRect()
+      triggerMove(yesRect.left + yesRect.width / 2, yesRect.top + yesRect.height / 2)
+    }
+  }
+
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => moveButton(e.clientX, e.clientY)
-    const handleTouchMove = (e: TouchEvent) => moveButton(e.touches[0].clientX, e.touches[0].clientY)
+    if (!unlocked) return
+    const handleMouseMove = (e: MouseEvent) => triggerMove(e.clientX, e.clientY)
+    const handleTouchMove = (e: TouchEvent) => triggerMove(e.touches[0].clientX, e.touches[0].clientY)
 
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('touchmove', handleTouchMove)
@@ -61,7 +83,7 @@ function App() {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('touchmove', handleTouchMove)
     }
-  }, [moveButton])
+  }, [triggerMove, unlocked])
 
   const handleYesClick = () => {
     setAccepted(true)
@@ -69,58 +91,120 @@ function App() {
       particleCount: 150,
       spread: 70,
       origin: { y: 0.6 },
-      colors: ['#ff0000', '#ff69b4', '#ffffff']
+      colors: ['#E37A87', '#FBE1D6', '#FFF7F3']
     })
   }
 
-  const getNoButtonText = () => {
-    const phrases = [
-      "No"
-    ]
-    return phrases[Math.min(Math.floor(noCount / 10), phrases.length - 1)]
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmedPw = password.toLowerCase().trim()
+    try {
+      const bytes = CryptoJS.AES.decrypt(ENCRYPTED_VAL, trimmedPw)
+      const decrypted = bytes.toString(CryptoJS.enc.Utf8)
+      
+      if (decrypted === 'ValentineUnlocked') {
+        const photoBytes = CryptoJS.AES.decrypt(encryptedImageData.data, trimmedPw)
+        const photoBase64 = photoBytes.toString(CryptoJS.enc.Utf8)
+        
+        if (photoBase64) {
+          setDecryptedPhoto(`data:image/png;base64,${photoBase64}`)
+          setUnlocked(true)
+          setError(false)
+        } else {
+          throw new Error('Failed to decrypt photo')
+        }
+      } else {
+        throw new Error('Invalid password')
+      }
+    } catch (err) {
+      setError(true)
+      setPassword('')
+    }
   }
 
-  if (accepted) {
+  if (!unlocked) {
     return (
-      <div className="container d-flex flex-column align-items-center justify-content-center vh-100 text-center">
-        <img
-          src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpobjZndmZ2ZndmZ2ZndmZ2ZndmZ2ZndmZ2ZndmZ2ZndmZ2ZndmZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/K6WfC6P9Cg4M/giphy.gif"
-          alt="Celebrating cat"
-          className="img-fluid mb-4 rounded shadow"
-          style={{ maxHeight: '300px' }}
-        />
-        <h1 className="display-4 fw-bold text-danger mb-3">Yay! I knew you'd say yes! ❤️</h1>
-        <p className="lead">I love you so much, Kyra! See you on the 14th!</p>
+      <div className="container-fluid d-flex flex-column align-items-center justify-content-center vh-100 text-center romantic-bg">
+        <div className="card p-5 shadow-lg romantic-card" style={{ maxWidth: '400px' }}>
+          <h2 className="mb-4">Password Pls ❤️</h2>
+          <form onSubmit={handlePasswordSubmit}>
+            <input 
+              type="password" 
+              className={`form-control mb-3 text-center ${error ? 'is-invalid' : ''}`} 
+              placeholder="Enter Password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                setError(false)
+              }}
+              style={{ borderRadius: '1rem', border: '2px solid #FBE1D6' }}
+            />
+            {error && <div className="text-danger mb-3 small">Hint: Your name ❤️</div>}
+            <button type="submit" className="btn btn-danger yes-button w-100 py-2" style={{ borderRadius: '1rem' }}>
+              Enter
+            </button>
+          </form>
+        </div>
       </div>
     )
   }
 
+  if (accepted) {
+    return (
+      <div className="container-fluid d-flex flex-column align-items-center justify-content-center vh-100 text-center romantic-bg">
+        {FLOATING_ITEMS.map(item => (
+          <div key={item.id} className="floating-heart" style={{ left: item.left, animationDelay: item.animationDelay, fontSize: item.fontSize }}>
+            {item.emoji}
+          </div>
+        ))}
+        <div className="card p-5 shadow-lg romantic-card">
+          {decryptedPhoto && (
+            <img
+              src={decryptedPhoto}
+              alt="Valentine's Special" 
+              className="img-fluid mb-4 rounded mx-auto d-block shadow" 
+              style={{ maxHeight: '350px', objectFit: 'cover' }}
+            />
+          )}
+          <h1 className="display-4 fw-bold text-danger mb-3">I knew you'd say yes! ❤️</h1>
+          <p className="lead">I can't wait for Valentines with you Kyra, see you on the 14th! 😘</p>
+        </div>
+      </div>
+    )
+  }
+
+  const yesScale = 1 + Math.floor(noCount / 10) * 0.1
+  const noScale = Math.max(0.4, 1 - Math.floor(noCount / 20) * 0.1)
+
   return (
     <div className="container-fluid d-flex flex-column align-items-center justify-content-center vh-100 text-center romantic-bg">
-      {HEARTS.map(heart => (
-        <div key={heart.id} className="floating-heart" style={{ left: heart.left, animationDelay: heart.animationDelay, fontSize: heart.fontSize }}>
-          ❤️
+      {FLOATING_ITEMS.map(item => (
+        <div key={item.id} className="floating-heart" style={{ left: item.left, animationDelay: item.animationDelay, fontSize: item.fontSize }}>
+          {item.emoji}
         </div>
       ))}
       <div className="card p-5 shadow-lg romantic-card">
-        <img
-          src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3pwa3N6Z3Z2ZndmZ2ZndmZ2ZndmZ2ZndmZ2ZndmZ2ZndmZ2ZndmZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/c76IJLufpNUMo/giphy.gif"
-          alt="Cute cat" className="img-fluid mb-4 rounded mx-auto d-block" style={{ maxHeight: '200px' }}
-        />
         <h1 className="display-3 fw-bold mb-4">Will you be my Valentine, Kyra?</h1>
-        <div className="d-flex gap-3 justify-items" style={{ minHeight: '80px' }}>
-          <div className="justify-content align-items-center"/>
+        
+        <div className="d-flex justify-content-center align-items-center gap-5 mt-4" style={{ minHeight: '150px' }}>
           <button
-            className="btn btn-danger btn-lg px-5 py-3 shadow yes-button"
-            style={{ fontSize: `${1.2 + Math.floor(noCount / 5) * 0.1}rem` }}
+            ref={yesButtonRef}
+            className="btn btn-danger btn-lg shadow yes-button"
+            onMouseEnter={handleYesHover}
+            style={{ 
+              fontSize: `${1.2 * yesScale}rem`,
+              width: `${120 * yesScale}px`,
+              height: `${50 * yesScale}px`
+            }}
             onClick={handleYesClick}
           >
             Yes!
           </button>
-          <div className="justify-content align-items-center"/>
-          <div className="justify-content align-items-center"/>
+          
+          <div style={{ width: '120px' }}></div>
         </div>
       </div>
+
       <button
         ref={noButtonRef}
         className="btn btn-outline-secondary btn-lg no-button"
@@ -128,11 +212,21 @@ function App() {
           position: 'fixed',
           left: `${noButtonPosition.x}px`,
           top: `${noButtonPosition.y}px`,
+          fontSize: `${1.2 * noScale}rem`,
+          width: `${120 * noScale}px`,
+          height: `${50 * noScale}px`,
           zIndex: 1000,
-          pointerEvents: 'none'
+          pointerEvents: 'none',
+          overflow: 'visible'
         }}
       >
-        {getNoButtonText()}
+        No
+        {noCount > 0 && (
+          <>
+            <span className="leg leg-left" style={{ height: `${15 * noScale}px`, bottom: `${-12 * noScale}px` }}></span>
+            <span className="leg leg-right" style={{ height: `${15 * noScale}px`, bottom: `${-12 * noScale}px` }}></span>
+          </>
+        )}
       </button>
     </div>
   )
