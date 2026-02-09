@@ -5,7 +5,7 @@ import encryptedImageData from './encrypted-photo.json'
 import encryptedTeaserData from './encrypted-teaser.json'
 import './App.css'
 
-const EMOJIS = ['❤️', '💖', '✨', '🌸', '🧸', '🌹', '🍫', '🥂']
+const EMOJIS = ['❤️', '💖', '🚴‍♀️', '🏃‍♀️', '🌸', '🏊‍♀️', '🌹', '🥂', '🥟']
 
 const FLOATING_ITEMS = Array.from({ length: 25 }, (_, i) => ({
   id: i,
