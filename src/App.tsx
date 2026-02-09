@@ -2,16 +2,17 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import confetti from 'canvas-confetti'
 import CryptoJS from 'crypto-js'
 import encryptedImageData from './encrypted-photo.json'
+import encryptedTeaserData from './encrypted-teaser.json'
 import './App.css'
 
 const EMOJIS = ['❤️', '💖', '✨', '🌸', '🧸', '🌹', '🍫', '🥂']
 
 const FLOATING_ITEMS = Array.from({ length: 25 }, (_, i) => ({
   id: i,
-  emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
   left: `${Math.random() * 100}%`,
   animationDelay: `${Math.random() * 5}s`,
-  fontSize: `${Math.random() * 20 + 15}px`
+  fontSize: `${Math.random() * 20 + 15}px`,
+  emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)]
 }))
 
 // This is 'ValentineUnlocked' encrypted with 'sexythang'
@@ -22,10 +23,11 @@ function App() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState(false)
   const [decryptedPhoto, setDecryptedPhoto] = useState<string | null>(null)
+  const [decryptedTeaser, setDecryptedTeaser] = useState<string | null>(null)
   const [accepted, setAccepted] = useState(false)
   const [noButtonPosition, setNoButtonPosition] = useState({
     x: window.innerWidth * 0.53,
-    y: window.innerHeight * 0.74
+    y: window.innerHeight * 0.80
   })
   const [noCount, setNoCount] = useState(0)
   const noButtonRef = useRef<HTMLButtonElement>(null)
@@ -106,12 +108,16 @@ function App() {
         const photoBytes = CryptoJS.AES.decrypt(encryptedImageData.data, trimmedPw)
         const photoBase64 = photoBytes.toString(CryptoJS.enc.Utf8)
         
-        if (photoBase64) {
+        const teaserBytes = CryptoJS.AES.decrypt(encryptedTeaserData.data, trimmedPw)
+        const teaserBase64 = teaserBytes.toString(CryptoJS.enc.Utf8)
+        
+        if (photoBase64 && teaserBase64) {
           setDecryptedPhoto(`data:image/png;base64,${photoBase64}`)
+          setDecryptedTeaser(`data:image/png;base64,${teaserBase64}`)
           setUnlocked(true)
           setError(false)
         } else {
-          throw new Error('Failed to decrypt photo')
+          throw new Error('Failed to decrypt photos')
         }
       } else {
         throw new Error('Invalid password')
@@ -131,7 +137,6 @@ function App() {
             <input 
               type="password" 
               className={`form-control mb-3 text-center ${error ? 'is-invalid' : ''}`} 
-              placeholder="Enter Password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value)
@@ -139,7 +144,7 @@ function App() {
               }}
               style={{ borderRadius: '1rem', border: '2px solid #FBE1D6' }}
             />
-            {error && <div className="text-danger mb-3 small">Hint: Your name ❤️</div>}
+            {error && <div className="text-danger mb-3 small">Wrong password 😡</div>}
             <button type="submit" className="btn btn-danger yes-button w-100 py-2" style={{ borderRadius: '1rem' }}>
               Enter
             </button>
@@ -184,7 +189,16 @@ function App() {
         </div>
       ))}
       <div className="card p-5 shadow-lg romantic-card">
-        <h1 className="display-3 fw-bold mb-4">Will you be my Valentine, Kyra?</h1>
+        {decryptedTeaser && (
+          <img
+            src={decryptedTeaser}
+            alt="Teaser" 
+            className="img-fluid mb-4 rounded mx-auto d-block shadow" 
+            style={{ maxHeight: '250px', objectFit: 'cover' }}
+          />
+        )}
+        <h1 className="display-3 fw-bold mb-2">Will you be my Valentine, Kyra?</h1>
+        <p className="lead italic mb-4">Kyra, you make me cray cray 🦞 for you.</p>
         
         <div className="d-flex justify-content-center align-items-center gap-5 mt-4" style={{ minHeight: '150px' }}>
           <button
