@@ -5,7 +5,7 @@ import encryptedImageData from './encrypted-photo.json'
 import encryptedTeaserData from './encrypted-teaser.json'
 import './App.css'
 
-const EMOJIS = ['❤️', '💖', '🚴‍♀️', '🏃‍♀️', '🌸', '🏊‍♀️', '🌹', '🥂', '🥟']
+const EMOJIS = ['❤️', '💖', '🌸', '🚴‍♀️', '🏃‍♀️', '🏊‍♀️', '🌹', '🥂', '🥟']
 
 const FLOATING_ITEMS = Array.from({ length: 25 }, (_, i) => ({
   id: i,
@@ -33,7 +33,7 @@ function App() {
   const noButtonRef = useRef<HTMLButtonElement>(null)
   const yesButtonRef = useRef<HTMLButtonElement>(null)
 
-  const triggerMove = useCallback((mouseX: number, mouseY: number) => {
+  const triggerMove = useCallback((mouseX: number, mouseY: number, force = false) => {
     if (!noButtonRef.current) return
 
     const rect = noButtonRef.current.getBoundingClientRect()
@@ -44,7 +44,7 @@ function App() {
     const dy = centerY - mouseY
     const distance = Math.sqrt(dx * dx + dy * dy)
 
-    if (distance < 150) {
+    if (force || distance < 150) {
       const angle = Math.atan2(dy, dx)
       const basePush = 50
       const randomness = (Math.random() - 0.5) * 2 * (basePush * 0.1)
@@ -67,10 +67,13 @@ function App() {
     }
   }, [])
 
+  // Handler for first hover on YES button - forced movement
   const handleYesHover = () => {
+    console.log(`Yes HOVER ${noCount}`)
     if (noCount === 0 && yesButtonRef.current) {
       const yesRect = yesButtonRef.current.getBoundingClientRect()
-      triggerMove(yesRect.left + yesRect.width / 2, yesRect.top + yesRect.height / 2)
+      // We simulate a mouse presence at the YES button to "scare" the NO button
+      triggerMove(yesRect.left + yesRect.width / 2, yesRect.top + yesRect.height / 2, true)
     }
   }
 
